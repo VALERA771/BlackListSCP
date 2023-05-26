@@ -1,8 +1,11 @@
 ﻿using Exiled.API.Features;
+using Exiled.Events.EventArgs.Player;
 using MEC;
+using PlayerRoles;
+using Respawning;
 using System;
 
-using Server = Exiled.Events.Handlers.Server;
+using Player = Exiled.Events.Handlers.Player;
 
 namespace BlacklistSCP
 {
@@ -12,51 +15,33 @@ namespace BlacklistSCP
         { 
         }
 
-        public Plugin Instance => _singleton;
-        private Plugin _singleton;
+        public static Config Instance;
 
-        public override string Name => base.Name;
-        public override string Prefix => base.Prefix;
-        public override string Author => base.Author;
-        public override Version Version => new Version(1, 0, 0);
+        public override string Name => "BlacklistSCP";
+        public override string Prefix => "SCPBL";
+        public override string Author => "VALERA771#1471";
+        public override Version Version => new Version(1, 0, 1);
         public override Version RequiredExiledVersion => new Version(6, 0, 0);
 
         public override void OnEnabled()
         {
-            Server.RoundStarted += OnRoundStarted;
-
-            _singleton = this;
+            Player.ChangingRole += OnPlayerChangedRole;
 
             base.OnEnabled();
         }
 
         public override void OnDisabled() 
         {
-            Server.RoundStarted -= OnRoundStarted;
-
-            _singleton = null;
+            Player.ChangingRole -= OnPlayerChangedRole;
 
             base.OnDisabled();
         }
 
-        public override void OnReloaded()
-        {
-            base.OnReloaded();
-        }
 
-
-        void OnRoundStarted()
+        void OnPlayerChangedRole(ChangingRoleEventArgs ev)
         {
-            Timing.CallDelayed(0.5f, () =>
-            {
-                foreach (Player player in Player.List)
-                {
-                    if (Instance.Config.BlacklistedRoles.Contains(player.Role.Type))
-                    {
-                        player.Role.Set(Instance.Config.SwapRoles.RandomItem());
-                    }
-                }
-            });
+            if (Instance.BlacklistedRoles.Contains(ev.NewRole))
+                ev.Player.Role.Set(Instance.SwapRoles.RandomItem(), Exiled.API.Enums.SpawnReason.Respawn, RoleSpawnFlags.All);
         }
     }
 }
